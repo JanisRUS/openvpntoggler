@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    remove|purge)
+        USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6 2>/dev/null || echo "$HOME")
+
+        rm -rf "$USER_HOME"/.config/OpenVPNToggler || true
+        rm -f  "$USER_HOME"/.local/share/icons/hicolor/256x256/apps/open-vpn.png || true
+
+        update-desktop-database /usr/share/applications  || true
+        update-icon-caches      /usr/share/icons/hicolor || true
+    ;;
+esac

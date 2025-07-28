@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=OpenVPN Toggler
+Exec=/usr/bin/open-vpn-toggler
+Icon=open-vpn
+Terminal=false
+Categories=Network;

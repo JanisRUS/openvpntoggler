@@ -1,0 +1,18 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    configure)
+        USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6 2>/dev/null || echo "$HOME")
+        USER_NAME=$(getent passwd "$SUDO_USER" | cut -d: -f1 2>/dev/null || echo "$USER")
+        
+        mkdir -p "$USER_HOME"/.local/share/icons || true
+        cp -n /usr/share/icons/hicolor/256x256/apps/open-vpn-off.png "$USER_HOME"/.local/share/icons/hicolor/256x256/apps/open-vpn.png || true
+        chown $USER_NAME:$USER_NAME "$USER_HOME"/.local/share/icons/hicolor/256x256/apps/open-vpn.png || true
+        chown $USER_NAME:$USER_NAME /usr/share/icons/hicolor/256x256/apps/open-vpn-on.png             || true
+        chown $USER_NAME:$USER_NAME /usr/share/icons/hicolor/256x256/apps/open-vpn-off.png            || true
+
+        update-desktop-database /usr/share/applications  || true
+        update-icon-caches      /usr/share/icons/hicolor || true
+    ;;
+esac

@@ -1,0 +1,14 @@
+Source: openvpntoggler
+Section: net
+Priority: optional
+Maintainer: JanisRUS <janisrus35@gmail.com>
+Standards-Version: 4.6.0
+Build-Depends: debhelper-compat (= 13)
+
+Package: openvpntoggler
+Architecture: all
+Depends: openvpn-systemd-resolved,
+         libnotify-bin,
+         openvpn3,
+         bash
+Description: OpenVPN toggler desktop shortcut

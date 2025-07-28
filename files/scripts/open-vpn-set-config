@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# Скрипт для импорта конфигурационного файла OpenVPN
+
+#
+# Константы
+#
+
+# @brief    Версия скрипта
+readonly COMMON_VERSION="1.0.0"
+# @brief    Название скрипта
+readonly COMMON_SCRIPT_FILE="$(basename "$0")"
+# @brief    Путь к скрипту
+readonly COMMON_SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+# @brief    Путь до директори OpenVPNToggler
+readonly COMMON_DIR="/home/$USER/.config/OpenVPNToggler"
+# @brief    Путь к лог файлу
+readonly COMMON_LOG_FILE="$COMMON_DIR/$COMMON_SCRIPT_FILE.log"
+# @brief    Путь до конфигурационного файла VPN
+readonly COMMON_CFG_FILE="$COMMON_DIR/config.ovpn"
+
+# @brief    Код успешного выполнения операции
+readonly ALL_OK=0
+# @brief    Код неуспешного выполнения операции
+readonly NOT_OK=1
+
+#
+# Функции
+#
+
+# @brief    Основная функция
+# @details  Данная функция выполняет создание COMMON_LOG_FILE,
+#               проверку OVPN_FILE на существование и
+#               копирует его в COMMON_CFG_FILE_PATH
+# @param    OVPN_FILE Файл OVPN
+# @return   Возвращает ALL_OK в случае успешного выполнения всех действий.
+#               В противном случае, возвращает NOT_OK
+function main ()
+{
+    local OVPN_FILE="$1"
+
+    if ! mkdir -p "$COMMON_DIR" >> /dev/null 2>&1
+    then
+        echo "Failed to create $COMMON_DIR!"
+        return $NOT_OK
+    fi
+
+    if ! truncate -s 0 "$COMMON_LOG_FILE" >> /dev/null 2>&1
+    then
+        echo "Failed to create $COMMON_LOG_FILE!"
+        return $NOT_OK
+    fi
+
+    if ! [ -w "$COMMON_LOG_FILE" ]
+    then
+        echo "Unable to write to $COMMON_LOG_FILE!"
+        return $NOT_OK
+    fi
+
+    if ! [ -f "$OVPN_FILE" ]
+    then
+        echo "File $OVPN_FILE does not exist!"
+        return $NOT_OK
+    fi
+
+    if ! cp "$OVPN_FILE" "$COMMON_CFG_FILE" >> $COMMON_LOG_FILE 2>&1
+    then
+        echo "Failed to copy $OVPN_FILE to $COMMON_CFG_FILE!"
+        echo "Details:"
+        echo "cat $COMMON_LOG_FILE"
+        return $NOT_OK
+    fi
+
+    if ! chmod =600 "$COMMON_CFG_FILE" >> $COMMON_LOG_FILE 2>&1
+    then
+        echo "Failed to change permissions of $COMMON_CFG_FILE!"
+        echo "Details:"
+        echo "cat $COMMON_LOG_FILE"
+        return $NOT_OK
+    fi
+
+    echo "Configuration was successfully set!"
+
+    return $ALL_OK
+}
+
+#
+# Точка входа в скрипт
+#
+
+main "$1"
+exit $?
