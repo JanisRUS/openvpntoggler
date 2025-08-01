@@ -1,3 +1,10 @@
+openvpntoggler (1.0.1) released;urgency=medium
+
+  * Hotfix
+  * Now postinst creating directory for local icon
+
+ -- janis <janis@JanisPC>  Fri, 01 Aug 2025 14:07:47 +0300
+
 openvpntoggler (1.0.0) released; urgency=medium
 
   * Initial release
