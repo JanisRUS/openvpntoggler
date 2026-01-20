@@ -1,0 +1,208 @@
+#!/bin/bash
+
+# @brief    Скрипт для обновления иконки OpenVPN для всех пользователей в зависимости от состояния подключения к VPN
+
+#
+# Константы
+#
+
+# @brief    Версия скрипта
+readonly COMMON_VERSION="1.0.0"
+# @brief    Название скрипта
+readonly COMMON_SCRIPT_FILE="$(basename "$0")"
+# @brief    Путь к скрипту
+readonly COMMON_SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+# @brief    Путь к лог файлу
+readonly COMMON_LOG_FILE="/tmp/$COMMON_SCRIPT_FILE.log"
+# @brief    Название иконки ярлыка
+readonly COMMON_VPN_ICON="open-vpn"
+
+# @brief    Код успешного выполнения операции
+readonly ALL_OK=0
+# @brief    Код неуспешного выполнения операции
+readonly NOT_OK=1
+
+#
+# Переменные
+#
+
+# @brief    Выбранный пользователь
+COMMON_USER=""
+# @brief    Путь к домашней директории пользователя
+COMMON_HOME=""
+# @brief    Путь до директории с иконками
+COMMON_VPN_ICON_DIR=""
+# @brief    Путь до иконки "VPN включен"
+COMMON_VPN_ICON_ON=""
+# @brief    Путь до иконки "VPN включен"
+COMMON_VPN_ICON_OFF=""
+# @brief    Путь до иконки "Уведомление"
+COMMON_VPN_ICON_NOTIFICATION=""
+# @brief    Путь до директори OpenVPNToggler
+COMMON_DIR=""
+# @brief    Путь до конфигурационного файла VPN
+COMMON_CFG_FILE=""
+# @brief    Путь до директории с приложениями
+COMMON_APP_DIR=""
+
+#
+# Функции
+#
+
+# @brief    Основная функция
+# @details  Данная функция выполняет следующие действия для всех пользователей: 
+#               вызов getSessionPath() и, в зависимости от результата вызова, 
+#               вызывает setActiveIcon() или setInactiveIcon()
+# @return   Возвращает ALL_OK в случае успешного выполнения всех действий.
+#               В противном случае, возвращает NOT_OK
+function main ()
+{
+    if ! truncate -s 0 "$COMMON_LOG_FILE" >> /dev/null 2>&1
+    then
+        echo "Failed to create $COMMON_LOG_FILE!"
+        return $NOT_OK
+    fi
+
+    if ! [ -w "$COMMON_LOG_FILE" ]
+    then
+        echo "Unable to write to $COMMON_LOG_FILE!"
+        return $NOT_OK
+    fi
+
+    # Обновить иконки у root
+    echo -n "Updating icon for root... "
+    COMMON_USER="root"
+    if updateUserIcons
+    then
+        echo "Done"
+    fi
+
+    local USERS=($(ls /home))
+    for COMMON_USER in "${USERS[@]}"
+    do
+        echo -n "Updating icon for $COMMON_USER... "
+        if ! updateUserIcons
+        then
+            continue
+        fi
+        echo "Done"
+    done
+
+    return $ALL_OK
+}
+
+# @brief    Функция обновления иконки OpenVPNToggler у пользователя
+# @details  Данная функция выполняет обновление иконки OpenVPNToggler,
+#               в зависимости от пользователя
+# @note     Зависит от переменных:
+#               COMMON_USER
+# @return   Возвращает ALL_OK в случае успешного обновления иконки.
+#               В противном случае, возвращает NOT_OK
+function updateUserIcons()
+{
+    COMMON_HOME="$(getent passwd "$COMMON_USER" | cut -d: -f6 2>/dev/null || echo "$HOME")"
+    COMMON_VPN_ICON_DIR="$COMMON_HOME/.local/share/icons/hicolor/256x256/apps"
+    COMMON_VPN_ICON_ON="$COMMON_VPN_ICON_DIR/open-vpn-on.png"
+    COMMON_VPN_ICON_OFF="$COMMON_VPN_ICON_DIR/open-vpn-off.png"
+    COMMON_VPN_ICON_NOTIFICATION="$COMMON_VPN_ICON_DIR/open-vpn-notification.png"
+    COMMON_DIR="$COMMON_HOME/.config/OpenVPNToggler"
+    COMMON_CFG_FILE="$COMMON_DIR/config.ovpn"
+    COMMON_APP_DIR="$COMMON_HOME/.local/share/applications"
+
+    if ! [ -d "$COMMON_DIR" ]
+    then
+        echo "OpenVPNToggler is not installed. Skip"
+        return $NOT_OK
+    fi
+
+    if ! [ -f "$COMMON_CFG_FILE" ]
+    then
+        echo "File $COMMON_CFG_FILE does not exist!"
+        return $NOT_OK
+    fi
+
+    if getSessionPath
+    then
+        setActiveIcon
+        return $?
+    else
+        setInactiveIcon
+        return $?
+    fi
+
+    return $NOT_OK
+}
+
+# @brief    Путь к сессии
+COMMON_SESSION_PATH=""
+
+# @brief    Функция получения пути сессии VPN
+# @details  Данная функция выполняет поиск пути сессии с конфигурационным файлом COMMON_CFG_FILE.
+#               Найденный путь записывается в COMMON_SESSION_PATH
+# @note     Зависит от переменных:
+#               COMMON_USER
+#               COMMON_CFG_FILE
+# @return   Возвращает ALL_OK в случае успешного подключения к VPN.
+#               В противном случае возвращет NOT_OK 
+function getSessionPath ()
+{
+    local SESSION=""
+
+    SESSION=$(sudo -u "$COMMON_USER" openvpn3 sessions-list | awk -v cfg="$COMMON_CFG_FILE" '
+    /^-----------------------------------------------------------------------------$/ { in_block = 1; path = "" }
+    /^ *Path:/ && in_block { path = $2 }
+    /^ *Config name:/ && in_block {
+        if ($3 == cfg) {
+            print path
+            exit
+        }
+    }
+    ')
+
+    if [ -z "$SESSION" ]
+    then
+        return $NOT_OK
+    fi
+
+    COMMON_SESSION_PATH="$SESSION"
+    return $ALL_OK
+}
+
+# @brief    Функция установки активной иконки VPN
+# @details  Данная функция выполняет изменение иконки на активную
+# @note     Зависит от переменных:
+#               COMMON_VPN_ICON_ON
+#               COMMON_VPN_ICON
+#               COMMON_APP_DIR
+#               COMMON_USER
+# @return   Возвращает ALL_OK
+function setActiveIcon ()
+{
+    sudo -u "$COMMON_USER" xdg-icon-resource install --size 256 "$COMMON_VPN_ICON_ON" "$COMMON_VPN_ICON"
+    sudo -u "$COMMON_USER" update-desktop-database "$COMMON_APP_DIR"
+
+    return $ALL_OK
+}
+
+# @brief    Функция установки активной иконки VPN
+# @details  Данная функция выполняет изменение иконки на неактивную
+# @note     Зависит от переменных:
+#               COMMON_VPN_ICON_OFF
+#               COMMON_VPN_ICON
+#               COMMON_APP_DIR
+#               COMMON_USER
+# @return   Возвращает ALL_OK
+function setInactiveIcon ()
+{
+    sudo -u "$COMMON_USER" xdg-icon-resource install --size 256 "$COMMON_VPN_ICON_OFF" "$COMMON_VPN_ICON"
+    sudo -u "$COMMON_USER" update-desktop-database "$COMMON_APP_DIR"
+
+    return $ALL_OK
+}
+
+#
+# Точка входа в скрипт
+#
+
+main "$@"
+exit $?

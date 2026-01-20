@@ -6,7 +6,7 @@
 
 - Ubuntu 22.04 и выше или Debian 11 и выше
 
-- Совместимое с `libnotify-bin` рабочее окружение
+- Использующее `gdbus` рабочее окружение
 
 # Зависимости для сборки
 
@@ -16,22 +16,49 @@
 
 - `devscripts`
 
+Опциональные зависимости
+
+- `docker`
+
 ```bash
 sudo apt install build-essential debhelper devscripts
 ```
 
 # Сборка
 
+Нативная сборка:
+
 ```bash
-dpkg-buildpackage -us -uc
+scripts/build-native
 ```
+
+Автоматическая сборка в Docker-контейнере:
+
+```bash
+scripts/build-docker <IMAGE>
+```
+
+> IMAGE- название базового Docker образа. По умолчанию: ubuntu:24.04
+
+Сборка Docker-образа для ручной сборки:
+
+```bash
+docker build -t open-vpn-builder --build-arg BASE_IMAGE=<IMAGE> --build-arg UID=$(id -u) --build-arg GID=$(id -g) -f Dockerfile.manual .
+```
+
+> IMAGE- название базового Docker образа. По умолчанию: ubuntu:24.04
+> 
+> UID- ID пользователя. По умолчанию: 1000
+> 
+> GID- ID группы. По умолчанию: 1000
+
+Собранный пакет будет находиться в директории `output`
 
 # Установка
 
 ```bash
-chmod +x scripts/open-vpn-prepare; \
-sudo scripts/open-vpn-prepare;     \
-sudo apt install ../openvpntoggler*
+sudo scripts/open-vpn-prepare; \
+sudo apt install output/*.deb
 ```
 
 # Использование
@@ -59,7 +86,6 @@ open-vpn-toggler
 # Удаление
 
 ```bash
-chmod +x scripts/open-vpn-clear; \
 sudo scripts/open-vpn-clear
 ```
 
@@ -68,9 +94,3 @@ sudo scripts/open-vpn-clear
 Все возникающие во время работы скриптов ошибки будут записываться в `.log` файл. Путь до `.log` файла будет выведен в терминал при возникновении ошибки
 
 # TODO
-
-- Найти способ моментального обновления иконки ярлыка в DE
-
-- Сделать уведомления блочными
-
-- Добавить таймаут уведомлений

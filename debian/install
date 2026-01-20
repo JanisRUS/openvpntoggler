@@ -1,5 +1,9 @@
-files/scripts/open-vpn-toggler    /usr/bin
-files/scripts/open-vpn-set-config /usr/bin
-files/icons/open-vpn-on.png       /usr/share/icons/hicolor/256x256/apps/
-files/icons/open-vpn-off.png      /usr/share/icons/hicolor/256x256/apps/
-files/open-vpn-toggler.desktop    /usr/share/applications
+files/scripts/open-vpn-toggler         /usr/bin
+files/scripts/open-vpn-set-config      /usr/bin
+files/scripts/open-vpn-startup         /usr/bin
+files/open-vpn-toggler.desktop         /usr/share/applications
+files/icons/open-vpn.png               /usr/share/icons/hicolor/256x256/apps
+files/icons/open-vpn-on.png            /usr/share/icons/hicolor/256x256/apps
+files/icons/open-vpn-off.png           /usr/share/icons/hicolor/256x256/apps
+files/icons/open-vpn-notification.png  /usr/share/icons/hicolor/256x256/apps
+files/service/open-vpn-startup.service /etc/systemd/system

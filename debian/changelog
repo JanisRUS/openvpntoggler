@@ -1,4 +1,13 @@
-openvpntoggler (1.0.1) released;urgency=medium
+open-vpn-toggler (1.0.2) released; urgency=medium
+
+  * Name changed openvpntoggler->open-vpn-toggler
+  * Startup service added
+  * Now OpenVPN icon depends on VPN connection status at startup
+  * Now icon updates immediately
+
+ -- janis <janis@JanisPC>  Tue, 20 Jan 2026 18:00:00 +0300
+
+openvpntoggler (1.0.1) released; urgency=medium
 
   * Hotfix
   * Now postinst creating directory for local icon

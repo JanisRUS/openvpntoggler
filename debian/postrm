@@ -3,12 +3,29 @@ set -e
 
 case "$1" in
     remove|purge)
-        USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6 2>/dev/null || echo "$HOME")
+        USER_HOME=$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f6 2>/dev/null || echo "$HOME")
+        USER_NAME=$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f1 2>/dev/null || echo "$USER")
+
+        ICONS=("open-vpn.png"
+               "open-vpn-on.png"
+               "open-vpn-off.png"
+               "open-vpn-notification.png")
+
+        USER_ICONS_PATH="$USER_HOME/.local/share/icons/hicolor/256x256/apps/"
+
+        for ICON in "${ICONS[@]}"
+        do
+            rm -f "$USER_ICONS_PATH/$ICON" || true
+        done
+
+        APP="open-vpn-toggler.desktop"
+        USER_APPS_PATH="$USER_HOME/.local/share/applications"
+
+        rm -f "$USER_APPS_PATH/$APP" || true
+
+                             update-desktop-database "$SYSTEM_APPS_PATH" || true
+        sudo -u "$USER_NAME" update-desktop-database "$USER_APPS_PATH"   || true
 
         rm -rf "$USER_HOME"/.config/OpenVPNToggler || true
-        rm -f  "$USER_HOME"/.local/share/icons/hicolor/256x256/apps/open-vpn.png || true
-
-        update-desktop-database /usr/share/applications  || true
-        update-icon-caches      /usr/share/icons/hicolor || true
     ;;
 esac

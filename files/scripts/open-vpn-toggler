@@ -1,31 +1,40 @@
 #!/bin/bash
 
-# Скрипт для переключения состояния подключения OpenVPN
+# @brief    Скрипт для переключения состояния подключения OpenVPN
+# @param    MODE Режим работы:
+#               ""    - Переключение статуса подключения к OpenVPN
+#               "get" - получение пути к сессии
 
 #
 # Константы
 #
 
 # @brief    Версия скрипта
-readonly COMMON_VERSION="1.0.0"
+readonly COMMON_VERSION="1.0.1"
 # @brief    Название скрипта
 readonly COMMON_SCRIPT_FILE="$(basename "$0")"
 # @brief    Путь к скрипту
 readonly COMMON_SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+# @brief    Путь к домашней директории пользователя
+readonly COMMON_HOME="$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f6 2>/dev/null || echo "$HOME")"
 # @brief    Путь до директори OpenVPNToggler
-readonly COMMON_DIR="/home/$USER/.config/OpenVPNToggler/"
+readonly COMMON_DIR="$COMMON_HOME/.config/OpenVPNToggler"
 # @brief    Путь к лог файлу
 readonly COMMON_LOG_FILE="$COMMON_DIR/$COMMON_SCRIPT_FILE.log"
 # @brief    Путь до конфигурационного файла VPN
 readonly COMMON_CFG_FILE="$COMMON_DIR/config.ovpn"
+# @brief    Путь до директории с приложениями
+readonly COMMON_APP_DIR="$COMMON_HOME/.local/share/applications"
 # @brief    Путь до директории с иконками
-readonly COMMON_VPN_ICON_DIR="/usr/share/icons/hicolor/256x256/apps/"
+readonly COMMON_VPN_ICON_DIR="$COMMON_HOME/.local/share/icons/hicolor/256x256/apps"
+# @brief    Название иконки ярлыка
+readonly COMMON_VPN_ICON="open-vpn"
 # @brief    Путь до иконки "VPN включен"
 readonly COMMON_VPN_ICON_ON="$COMMON_VPN_ICON_DIR/open-vpn-on.png"
 # @brief    Путь до иконки "VPN включен"
 readonly COMMON_VPN_ICON_OFF="$COMMON_VPN_ICON_DIR/open-vpn-off.png"
-# @brief    Название иконки ярлыка
-readonly COMMON_VPN_ICON="open-vpn"
+# @brief    Путь до иконки "Уведомление"
+readonly COMMON_VPN_ICON_NOTIFICATION="$COMMON_VPN_ICON_DIR/open-vpn-notification.png"
 # @brief    Название ПО в уведомлении
 readonly COMMON_NOTIFY_NAME="OpenVPN"
 
@@ -41,10 +50,15 @@ readonly NOT_OK=1
 # @brief    Основная функция
 # @details  Данная функция выполняет вызов getSessionPath() и,
 #               в зависимости от результата вызова, вызывает start() или stop()
+# @param    MODE Режим работы:
+#               ""    - Переключение статуса подключения к OpenVPN
+#               "get" - получение пути к сессии
 # @return   Возвращает ALL_OK в случае успешного выполнения всех действий.
 #               В противном случае, возвращает NOT_OK
 function main ()
 {
+    local MODE="$1"
+
     if ! mkdir -p "$COMMON_DIR" >> /dev/null 2>&1
     then
         echo "Failed to create $COMMON_DIR!"
@@ -65,7 +79,7 @@ function main ()
 
     if ! [ -f "$COMMON_CFG_FILE" ]
     then
-        notify-send -a "$COMMON_NOTIFY_NAME" -i "$COMMON_VPN_ICON_OFF" "Set OpenVPN config!"
+        sendNotify "Set OpenVPN config!"
         echo "File $COMMON_CFG_FILE does not exist!"
         return $NOT_OK
     fi
@@ -124,21 +138,21 @@ function getSessionPath ()
 #               В противном случае возвращет NOT_OK 
 function start ()
 {
-    notify-send -a "$COMMON_NOTIFY_NAME" -i "$COMMON_VPN_ICON_OFF" "Connecting to VPN... "
+    sendNotify "Connecting to VPN... "
     echo -n "Connecting to VPN... "
     if ! openvpn3 session-start --config "$COMMON_CFG_FILE" >> "$COMMON_LOG_FILE" 2>&1
     then
-        notify-send -a "$COMMON_NOTIFY_NAME" -i "$COMMON_VPN_ICON_OFF" "Failed to connect!"
+        sendNotify "Failed to connect!"
         echo "Failed!"
         echo "Details:"
         echo "cat $COMMON_LOG_FILE"
         return $NOT_OK
     fi
-    notify-send -a "$COMMON_NOTIFY_NAME" -i "$COMMON_VPN_ICON_ON" "Connected!"
+    sendNotify "Connected!"
     echo "Done!"
     
-    xdg-icon-resource install --noupdate --size 256 "$COMMON_VPN_ICON_ON" "$COMMON_VPN_ICON"
-    xdg-icon-resource forceupdate
+    xdg-icon-resource install --size 256 "$COMMON_VPN_ICON_ON" "$COMMON_VPN_ICON"
+    update-desktop-database "$COMMON_APP_DIR"
 
     return $ALL_OK
 }
@@ -149,21 +163,56 @@ function start ()
 #               В противном случае возвращет NOT_OK 
 function stop ()
 {
-    notify-send -a "$COMMON_NOTIFY_NAME" -i "$COMMON_VPN_ICON_ON" "Disconnecting from VPN... "
+    sendNotify "Disconnecting from VPN... "
     echo -n "Disconnecting from VPN... "
     if ! openvpn3 session-manage --session-path "$COMMON_SESSION_PATH" --disconnect >> "$COMMON_LOG_FILE" 2>&1
     then
-        notify-send -a "$COMMON_NOTIFY_NAME" -i "$COMMON_VPN_ICON_ON" "Failed to disconnect!"
+        sendNotify "Failed to disconnect!"
         echo "Failed!"
         echo "Details:"
         echo "cat $COMMON_LOG_FILE"
         return $NOT_OK
     fi
-    notify-send -a "$COMMON_NOTIFY_NAME" -i "$COMMON_VPN_ICON_OFF" "Disconnected!"
+    sendNotify "Disconnected!"
     echo "Done!"
 
-    xdg-icon-resource install --noupdate --size 256 "$COMMON_VPN_ICON_OFF" "$COMMON_VPN_ICON"
-    xdg-icon-resource forceupdate
+    xdg-icon-resource install --size 256 "$COMMON_VPN_ICON_OFF" "$COMMON_VPN_ICON"
+    update-desktop-database "$COMMON_APP_DIR"
+
+    return $ALL_OK
+}
+
+# @brief    Файл с Id уведомления
+COMMON_NOTIFY_FILE="$COMMON_DIR/notify.id"
+
+# @brief    Функция отправки уведомления
+# @details  Данная функция выполняет отправку уведомления
+# @param    HEADER  Заголовок
+# @param    MESSAGE Сообщение
+# @return   Возвращает ALL_OK
+function sendNotify()
+{
+    local HEADER="$1"
+    local MESSAGE="$2"
+    local ID=0
+
+    [[ -f "$COMMON_NOTIFY_FILE" ]] && ID=$(<"$COMMON_NOTIFY_FILE")
+
+    local RESULT=$(gdbus call                                          \
+                         --session                                     \
+                         --dest org.freedesktop.Notifications          \
+                         --object-path /org/freedesktop/Notifications  \
+                         --method org.freedesktop.Notifications.Notify \
+                         "$COMMON_NOTIFY_NAME"                         \
+                         $ID                                           \
+                         "$COMMON_VPN_ICON_NOTIFICATION"               \
+                         "$HEADER"                                     \
+                         "$MESSAGE"                                    \
+                         []                                            \
+                         {}                                            \
+                         1000)
+
+    echo "$RESULT" | sed -n 's/.*uint32 \([0-9]\+\).*/\1/p' > "$COMMON_NOTIFY_FILE"
 
     return $ALL_OK
 }

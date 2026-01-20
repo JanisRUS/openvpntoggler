@@ -1,0 +1,34 @@
+# Базовые настройки образа
+ARG  BASE_IMAGE=ubuntu:24.04
+FROM ${BASE_IMAGE}
+
+# Синхронизация репозитория
+RUN apt-get update
+
+# Установка зависимостей
+RUN apt-get install -y \
+    build-essential    \
+    devscripts         \
+    debhelper
+
+# Настройка пользователя
+ARG  UID=1000
+ARG  GID=1000
+ARG  USERNAME=builder
+RUN  apt-get install -y sudo &&                                   \
+     if ! getent group ${GID} > /dev/null 2>&1; then              \
+         groupadd -g ${GID} ${USERNAME};                          \
+     fi &&                                                        \
+     if ! getent passwd ${UID} > /dev/null 2>&1; then             \
+         useradd -m -u ${UID} -g ${GID} -s /bin/bash ${USERNAME}; \
+     fi &&                                                        \
+     echo "${USERNAME} ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers
+USER ${UID}
+
+# Подготовка окружения
+COPY     --chown=${UID}:${GID} . /build/open-vpn-toggler
+WORKDIR /build/open-vpn-toggler
+
+# Сборка пакета
+VOLUME /build/open-vpn-toggler/output
+CMD    ["bash", "scripts/build-native", "1"]

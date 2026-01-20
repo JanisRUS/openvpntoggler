@@ -1,0 +1,11 @@
+[Unit]
+Description=OpenVPN Toggler Startup
+After=openvpn.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/open-vpn-startup
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target

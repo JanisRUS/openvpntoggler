@@ -3,16 +3,41 @@ set -e
 
 case "$1" in
     configure)
-        USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6 2>/dev/null || echo "$HOME")
-        USER_NAME=$(getent passwd "$SUDO_USER" | cut -d: -f1 2>/dev/null || echo "$USER")
-        
-        mkdir -p "$USER_HOME"/.local/share/icons/hicolor/256x256/apps/                                                                 || true
-        cp -n /usr/share/icons/hicolor/256x256/apps/open-vpn-off.png "$USER_HOME"/.local/share/icons/hicolor/256x256/apps/open-vpn.png || true
-        chown $USER_NAME:$USER_NAME "$USER_HOME"/.local/share/icons/hicolor/256x256/apps/open-vpn.png || true
-        chown $USER_NAME:$USER_NAME /usr/share/icons/hicolor/256x256/apps/open-vpn-on.png             || true
-        chown $USER_NAME:$USER_NAME /usr/share/icons/hicolor/256x256/apps/open-vpn-off.png            || true
+        USER_HOME=$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f6 2>/dev/null || echo "$HOME")
+        USER_NAME=$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f1 2>/dev/null || echo "$USER")
 
-        update-desktop-database /usr/share/applications  || true
-        update-icon-caches      /usr/share/icons/hicolor || true
+        ICONS=("open-vpn.png"
+               "open-vpn-on.png"
+               "open-vpn-off.png"
+               "open-vpn-notification.png")
+
+        SYSTEM_ICONS_PATH="/usr/share/icons/hicolor/256x256/apps/"
+        USER_ICONS_PATH="$USER_HOME/.local/share/icons/hicolor/256x256/apps/"
+
+        mkdir -p "$USER_ICONS_PATH" || true
+        for ICON in "${ICONS[@]}"
+        do
+            cp "$SYSTEM_ICONS_PATH/$ICON" "$USER_ICONS_PATH/$ICON" || true
+            chown $USER_NAME:$USER_NAME   "$USER_ICONS_PATH/$ICON" || true
+        done
+
+        APP="open-vpn-toggler.desktop"
+        SYSTEM_APPS_PATH="/usr/share/applications"
+        USER_APPS_PATH="$USER_HOME/.local/share/applications"
+
+        cp "$SYSTEM_APPS_PATH/$APP" "$USER_APPS_PATH/$APP" || true
+        chown $USER_NAME:$USER_NAME "$USER_APPS_PATH/$APP" || true
+
+        # @warning Должно соответствовать ICONS! Последний аргумент xdg-icon-resource - название файла без пути и расширения!
+        sudo -u "$USER_NAME" xdg-icon-resource install --size 256 "$USER_ICONS_PATH/open-vpn-off.png" "open-vpn"
+
+                             update-desktop-database "$SYSTEM_APPS_PATH" || true
+        sudo -u "$USER_NAME" update-desktop-database "$USER_APPS_PATH"   || true
+
+        sudo -u "$USER_NAME" mkdir -p "$USER_HOME/.config/OpenVPNToggler" || true
+
+        systemctl daemon-reload
+        systemctl enable open-vpn-startup.service
+        systemctl start open-vpn-startup.service
     ;;
 esac
