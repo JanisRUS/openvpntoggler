@@ -51,6 +51,12 @@ function main ()
     echo "Выполнено!"
     
     echo -n "Подготовка выходных файлов... "
+    if ! mv ../open-vpn-toggler-* "$COMMON_OUTPUT_DIR" >> "$COMMON_LOG_FILE" 2>&1
+    then
+        echo "Ошибка!"
+        showLog
+        return $NOT_OK
+    fi
     if ! mv ../open-vpn-toggler_* "$COMMON_OUTPUT_DIR" >> "$COMMON_LOG_FILE" 2>&1
     then
         echo "Ошибка!"

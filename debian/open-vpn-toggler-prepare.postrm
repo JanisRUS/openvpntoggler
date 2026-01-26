@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    remove|purge)
+        rm -rf "/etc/apt/keyrings/openvpn.asc"         || true
+        rm -rf "/etc/apt/sources.list.d/openvpn3.list" || true
+
+        echo "The OpenVPN repositories have been removed! Use:"
+        echo -e "\tapt update"
+        echo -e "\tapt autoremove"
+    ;;
+esac

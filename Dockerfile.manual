@@ -2,15 +2,12 @@
 ARG  BASE_IMAGE=ubuntu:24.04
 FROM ${BASE_IMAGE}
 
-# Синхронизация репозитория
-RUN apt-get update
-
 # Установка зависимостей
-RUN apt-get install -y \
+RUN apt-get update &&  \
+    apt-get install -y \
     build-essential    \
     devscripts         \
-    debhelper          \
-    sudo
+    debhelper
 
 # Настройка пользователя
 ARG  UID=1000

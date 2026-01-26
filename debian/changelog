@@ -1,3 +1,9 @@
+open-vpn-toggler (1.0.3) released; urgency=medium
+
+  * open-vpn-prepare and open-vpn-clear merged into open-vpn-toggler-prepare package
+
+ -- janis <janis@JanisPC>  Mon, 26 Jan 2026 14:30:00 +0300
+
 open-vpn-toggler (1.0.2) released; urgency=medium
 
   * Name changed openvpntoggler->open-vpn-toggler
