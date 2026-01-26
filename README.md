@@ -1,6 +1,6 @@
 # Переключатель соединения OpenVPN
 
-Небольшой набор скриптов для переключения соединения OpenVPN как через CLI, так и через ярлык
+Небольшой набор скриптов для переключения соединения OpenVPN 3 client как через CLI, так и через ярлык
 
 # Зависимости для запуска
 
@@ -57,8 +57,9 @@ docker build -t open-vpn-builder --build-arg BASE_IMAGE=<IMAGE> --build-arg UID=
 # Установка
 
 ```bash
-sudo scripts/open-vpn-prepare; \
-sudo apt install output/*.deb
+sudo apt install ./output/open-vpn-toggler-prepare*.deb && \
+sudo apt update                                         && \
+sudo apt install ./output/open-vpn-toggler_*.deb
 ```
 
 # Использование
@@ -86,7 +87,7 @@ open-vpn-toggler
 # Удаление
 
 ```bash
-sudo scripts/open-vpn-clear
+sudo apt remove open-vpn-toggler*
 ```
 
 # Устранение неполадок
@@ -94,3 +95,5 @@ sudo scripts/open-vpn-clear
 Все возникающие во время работы скриптов ошибки будут записываться в `.log` файл. Путь до `.log` файла будет выведен в терминал при возникновении ошибки
 
 # TODO
+
+- 

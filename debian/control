@@ -15,3 +15,9 @@ Provides:  openvpntoggler
 Replaces:  openvpntoggler
 Conflicts: openvpntoggler
 Description: OpenVPN toggler desktop shortcut
+
+Package: open-vpn-toggler-prepare
+Architecture: all
+Depends: apt-transport-https,
+         curl
+Description: Adds the OpenVPN repositories to apt

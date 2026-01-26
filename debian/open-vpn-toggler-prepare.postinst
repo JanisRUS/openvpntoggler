@@ -1,0 +1,115 @@
+#!/bin/bash
+set -e
+
+# @brief    Список дистрибутивов
+readonly COMMON_DISTS=("bookworm"
+                       "trixie"
+                       "jammy"
+                       "noble"
+                       "plucky")
+
+# @brief    Функция добавления пакетов OpenVPN в apt
+# @details  Данная функция выполняет получение дистрибутива,
+#               загрузку gpg ключа и добавление пакетов OpenVPN в apt
+# @return   Всегда возвращает 0
+function addOpenVPNToApt ()
+{
+    local DISTRO=""
+    
+    echo -n "Detecting the distribution... "
+    
+    DISTRO="$(grep -h -r "VERSION_CODENAME" /etc/*release | cut -d '=' -f2)"    
+    if [ -z "$DISTRO" ]
+    then
+        echo "Failed. Unable to read /etc/*release file"
+        abort
+        return 0
+    fi
+
+    echo "Done"
+
+    local DIST=""
+    local IS_FOUND=0
+
+    echo -n "Checking the distribution... "
+
+    for DIST in "${COMMON_DISTS[@]}"
+    do
+        if [ "$DISTRO" == "$DIST" ]
+        then
+            IS_FOUND=1
+        fi
+    done
+    
+    if [ $IS_FOUND != 1 ]
+    then
+        echo "Failed. The $DISTRO distribution is not suported"
+        abort
+        return 0
+    fi
+
+    echo "Done"
+    
+    echo -n "Prepairing gpg key... "
+
+    if ! mkdir -p /etc/apt/keyrings >> /dev/null 2>&1
+    then
+        echo "Failed. Unable to create /etc/apt/keyrings"
+        abort
+        return 0
+    fi
+
+    if ! curl -sSfL https://packages.openvpn.net/packages-repo.gpg > /etc/apt/keyrings/openvpn.asc 2> /dev/null
+    then
+        echo "Failed. Unable to download gpg key"
+        abort
+        return 0  
+    fi
+
+    echo "Done"
+    
+    local OPENVPN_REPO="deb [signed-by=/etc/apt/keyrings/openvpn.asc] https://packages.openvpn.net/openvpn3/debian $DISTRO main"
+
+    echo -n "Adding OpenVPN packages for the $DISTRO distribution... "
+
+    if ! mkdir -p /etc/apt/sources.list.d >> /dev/null 2>&1
+    then
+        echo "Failed. Unable to create /etc/apt/sources.list.d"
+        abort
+        return 0
+    fi
+
+    if [ ! -f /etc/apt/sources.list.d/openvpn3.list ] || ! grep -qF "$OPENVPN_REPO" /etc/apt/sources.list.d/openvpn3.list
+    then
+        if ! echo "$OPENVPN_REPO" > /etc/apt/sources.list.d/openvpn3.list 2> /dev/null
+        then
+            echo "Failed. Unable to create /etc/apt/sources.list.d/openvpn3.list"
+            abort
+            return 0
+        fi
+    fi
+
+    echo "Done"
+
+    echo "The OpenVPN repositories have been added! Use:"
+    echo -e "\tapt update"
+
+    return $ALL_OK
+}
+
+# @brief    Функция прерывания операции
+# @details  Данная функция выполняет вывод сообщения о действиях, 
+#               которые пакет не смог выполнить и которые должен выполнить пользователь
+# @return   Всегда возвращает 0 
+function abort()
+{
+    echo "Try to reinstall the package or add openvpn repositories manually"
+    echo "Instruction: https://openvpn.net/cloud-docs/tutorials/configuration-tutorials/connectors/operating-systems/linux/tutorial--learn-to-install-and-control-the-openvpn-3-client.html"
+    return 0
+} 
+
+case "$1" in
+    configure)
+        addOpenVPNToApt
+    ;;
+esac
