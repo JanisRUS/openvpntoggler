@@ -29,7 +29,7 @@ case "$1" in
         chown $USER_NAME:$USER_NAME "$USER_APPS_PATH/$APP" || true
 
         # @warning Должно соответствовать ICONS! Последний аргумент xdg-icon-resource - название файла без пути и расширения!
-        sudo -u "$USER_NAME" xdg-icon-resource install --size 256 "$USER_ICONS_PATH/open-vpn-off.png" "open-vpn"
+        sudo -u "$USER_NAME" xdg-icon-resource install --size 256 "$USER_ICONS_PATH/open-vpn-off.png" "open-vpn" || true
 
                              update-desktop-database "$SYSTEM_APPS_PATH" || true
         sudo -u "$USER_NAME" update-desktop-database "$USER_APPS_PATH"   || true
