@@ -1,3 +1,9 @@
+open-vpn-toggler (1.0.4) released; urgency=medium
+
+  * Possible apt breakage fixed
+
+ -- janis <janis@JanisPC>  Mon, 26 Jan 2026 23:51:13 +0300
+
 open-vpn-toggler (1.0.3) released; urgency=medium
 
   * open-vpn-prepare and open-vpn-clear merged into open-vpn-toggler-prepare package
