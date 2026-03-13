@@ -140,9 +140,11 @@ function start ()
 {
     sendNotify "Connecting to VPN... "
     echo -n "Connecting to VPN... "
-    if ! openvpn3 session-start --config "$COMMON_CFG_FILE" >> "$COMMON_LOG_FILE" 2>&1
+    if ! openvpn3 session-start --config "$COMMON_CFG_FILE" --timeout 10 >> "$COMMON_LOG_FILE" 2>&1
     then
         sendNotify "Failed to connect!"
+        xdg-icon-resource install --size 256 "$COMMON_VPN_ICON_OFF" "$COMMON_VPN_ICON"
+        update-desktop-database "$COMMON_APP_DIR"
         echo "Failed!"
         echo "Details:"
         echo "cat $COMMON_LOG_FILE"
@@ -168,6 +170,8 @@ function stop ()
     if ! openvpn3 session-manage --session-path "$COMMON_SESSION_PATH" --disconnect >> "$COMMON_LOG_FILE" 2>&1
     then
         sendNotify "Failed to disconnect!"
+        xdg-icon-resource install --size 256 "$COMMON_VPN_ICON_ON" "$COMMON_VPN_ICON"
+        update-desktop-database "$COMMON_APP_DIR"
         echo "Failed!"
         echo "Details:"
         echo "cat $COMMON_LOG_FILE"
